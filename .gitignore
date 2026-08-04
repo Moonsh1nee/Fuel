@@ -41,6 +41,9 @@ yarn-error.log*
 /dev.db-journal
 /build-placeholder.db
 
+# real user data exported from HabitForge for one-off import — never commit
+/prisma/import-data/
+
 # vercel
 .vercel
 

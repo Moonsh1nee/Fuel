@@ -1,0 +1,254 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+// --- Auth.js models (credentials only) ---
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?
+  passwordHash  String?
+
+  accounts Account[]
+  sessions Session[]
+
+  nutritionPlans     NutritionPlan[]
+  foodLogs           FoodLog[]
+  workoutPlans       WorkoutPlan[]
+  workoutLogs        WorkoutLog[]
+  exerciseTemplates  ExerciseTemplate[]
+  personalRecords    PersonalRecord[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// --- Domain models ---
+
+enum MealType {
+  BREAKFAST
+  LUNCH
+  DINNER
+  SNACK
+}
+
+model NutritionPlan {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name           String
+  description    String?
+  targetCalories Int?
+  targetProtein  Float?
+  targetCarbs    Float?
+  targetFat      Float?
+
+  meals MealTemplate[]
+
+  // Original HabitForge NutritionPlan.id — one-time import bookkeeping only.
+  sourceId String? @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model MealTemplate {
+  id     String        @id @default(cuid())
+  planId String
+  plan   NutritionPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  mealType MealType
+  name     String
+  calories Int?
+  protein  Float?
+  carbs    Float?
+  fat      Float?
+
+  @@index([planId])
+}
+
+model FoodLog {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  date     DateTime
+  mealType MealType
+  name     String
+  calories Int?
+  protein  Float?
+  carbs    Float?
+  fat      Float?
+  notes    String?
+
+  sourceId String? @unique
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, date])
+}
+
+model WorkoutPlan {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name        String
+  description String?
+  daysPerWeek Int?
+  isArchived  Boolean @default(false)
+
+  exercises PlanExercise[]
+  logs      WorkoutLog[]
+
+  sourceId String? @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model PlanExercise {
+  id     String      @id @default(cuid())
+  planId String
+  plan   WorkoutPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  name        String
+  muscleGroup String?
+  sets        Int?
+  repsPerSet  Int?
+  weightKg    Float?
+  orderInPlan Int     @default(0)
+  notes       String?
+
+  @@index([planId])
+}
+
+model WorkoutLog {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  planId String?
+  plan   WorkoutPlan? @relation(fields: [planId], references: [id], onDelete: SetNull)
+
+  date            DateTime
+  durationMinutes Int?
+  notes           String?
+
+  exerciseLogs    ExerciseLog[]
+  personalRecords PersonalRecord[]
+
+  sourceId String? @unique
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId, date])
+}
+
+model ExerciseLog {
+  id           String     @id @default(cuid())
+  workoutLogId String
+  workoutLog   WorkoutLog @relation(fields: [workoutLogId], references: [id], onDelete: Cascade)
+
+  name        String
+  muscleGroup String?
+  sets        Int?
+  repsPerSet  Int?
+  weightKg    Float?
+  notes       String?
+
+  @@index([workoutLogId])
+}
+
+model ExerciseTemplate {
+  id          String  @id @default(cuid())
+  name        String
+  description String?
+  muscleGroup String
+  equipment   String
+  isSystem    Boolean @default(false)
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  records PersonalRecord[]
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([muscleGroup])
+}
+
+model PersonalRecord {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  exerciseTemplateId String?
+  exerciseTemplate   ExerciseTemplate? @relation(fields: [exerciseTemplateId], references: [id], onDelete: SetNull)
+
+  exerciseName String
+  recordType   String // "max_weight" | "max_reps" | "max_volume"
+  value        Float
+  unit         String
+  achievedAt   DateTime
+
+  workoutLogId String?
+  workoutLog   WorkoutLog? @relation(fields: [workoutLogId], references: [id], onDelete: SetNull)
+
+  notes String?
+
+  sourceId String? @unique
+
+  @@index([userId])
+  @@index([exerciseTemplateId])
+}

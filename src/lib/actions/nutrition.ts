@@ -96,6 +96,7 @@ const foodLogSchema = z.object({
   protein: z.number().min(0).optional(),
   carbs: z.number().min(0).optional(),
   fat: z.number().min(0).optional(),
+  gramsLogged: z.number().min(0).optional(),
   notes: z.string().max(500).optional(),
 });
 

@@ -21,6 +21,7 @@ model User {
 
   nutritionPlans     NutritionPlan[]
   foodLogs           FoodLog[]
+  customFoods        CustomFood[]
   workoutPlans       WorkoutPlan[]
   workoutLogs        WorkoutLog[]
   exerciseTemplates  ExerciseTemplate[]
@@ -118,20 +119,59 @@ model FoodLog {
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  date     DateTime
-  mealType MealType
-  name     String
-  calories Int?
-  protein  Float?
-  carbs    Float?
-  fat      Float?
-  notes    String?
+  date        DateTime
+  mealType    MealType
+  name        String
+  calories    Int?
+  protein     Float?
+  carbs       Float?
+  fat         Float?
+  gramsLogged Float?
+  notes       String?
 
   sourceId String? @unique
 
   createdAt DateTime @default(now())
 
   @@index([userId, date])
+}
+
+model CustomFood {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name String
+
+  // Computed at create time from `components`, so this can be handed to
+  // FoodSearchCombobox/FoodLogForm as a plain per-100g source with no
+  // joins or client-side math - the same mechanism as an OFF search hit.
+  caloriesPer100g Float?
+  proteinPer100g  Float?
+  carbsPer100g    Float?
+  fatPer100g      Float?
+
+  components CustomFoodComponent[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model CustomFoodComponent {
+  id           String     @id @default(cuid())
+  customFoodId String
+  customFood   CustomFood @relation(fields: [customFoodId], references: [id], onDelete: Cascade)
+
+  name            String
+  grams           Float
+  caloriesPer100g Float?
+  proteinPer100g  Float?
+  carbsPer100g    Float?
+  fatPer100g      Float?
+
+  @@index([customFoodId])
 }
 
 model WorkoutPlan {

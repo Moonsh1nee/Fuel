@@ -30,3 +30,31 @@ export function scaleMacrosByGrams(per100g: MacrosPer100g, grams: number): Scale
     fat: scaleDecimal(per100g.fatPer100g),
   };
 }
+
+export interface AbsoluteMacros {
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+}
+
+/**
+ * Sums the absolute macros of a set of weighted components (each scaled by
+ * its own grams). Shared by computeCompositeMacros (divides by total weight)
+ * and computeRecipeMacrosPerServing (divides by serving count) - the sum
+ * itself is identical, only the final denominator differs.
+ */
+export function sumAbsoluteMacros(components: { grams: number; per100g: MacrosPer100g }[]): AbsoluteMacros {
+  return components.reduce(
+    (acc, c) => {
+      const scaled = scaleMacrosByGrams(c.per100g, c.grams);
+      return {
+        calories: acc.calories + (scaled.calories ?? 0),
+        protein: acc.protein + (scaled.protein ?? 0),
+        carbs: acc.carbs + (scaled.carbs ?? 0),
+        fat: acc.fat + (scaled.fat ?? 0),
+      };
+    },
+    { calories: 0, protein: 0, carbs: 0, fat: 0 },
+  );
+}

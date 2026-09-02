@@ -22,6 +22,9 @@ model User {
   nutritionPlans     NutritionPlan[]
   foodLogs           FoodLog[]
   customFoods        CustomFood[]
+  recipes            Recipe[]
+  menuEntries        MenuEntry[]
+  shoppingListChecks ShoppingListCheck[]
   workoutPlans       WorkoutPlan[]
   workoutLogs        WorkoutLog[]
   exerciseTemplates  ExerciseTemplate[]
@@ -172,6 +175,90 @@ model CustomFoodComponent {
   fatPer100g      Float?
 
   @@index([customFoodId])
+}
+
+model Recipe {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  name         String
+  description  String?
+  mealType     MealType
+  servings     Int      @default(1)
+  instructions String
+  prepMinutes  Int?
+  cookMinutes  Int?
+
+  // Snapshotted per serving from `ingredients` at create/update time, the
+  // same pattern CustomFood already uses for its per-100g snapshot - so
+  // menu generation and the shopping list can read macros for every
+  // candidate recipe in a month-long scan without summing ingredients
+  // each time. Unlike FoodLog, MenuEntry does NOT keep its own snapshot -
+  // a menu is a forward-looking plan, not a historical log, so correcting
+  // a recipe should retroactively improve the current month's projection.
+  caloriesPerServing Int?
+  proteinPerServing  Float?
+  carbsPerServing    Float?
+  fatPerServing      Float?
+
+  ingredients RecipeIngredient[]
+  menuEntries MenuEntry[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([userId, mealType])
+}
+
+model RecipeIngredient {
+  id       String @id @default(cuid())
+  recipeId String
+  recipe   Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  // Editable, not just the picked search result's name verbatim - this is
+  // the practical lever for shopping-list name normalization (exact-match
+  // aggregation, no fuzzy matching - see shopping-list-calc.ts).
+  name            String
+  grams           Float
+  caloriesPer100g Float?
+  proteinPer100g  Float?
+  carbsPer100g    Float?
+  fatPer100g      Float?
+
+  @@index([recipeId])
+}
+
+model MenuEntry {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  date     DateTime // local midnight, same convention as FoodLog.date
+  mealType MealType
+  recipeId String
+  recipe   Recipe   @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+  servings Float    @default(1)
+
+  createdAt DateTime @default(now())
+
+  @@index([userId, date])
+}
+
+model ShoppingListCheck {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  monthKey String // "2026-09"
+  itemKey  String // normalized ingredient name (trim+lowercase, same key computeShoppingList uses)
+  checked  Boolean @default(true)
+
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, monthKey, itemKey])
+  @@index([userId, monthKey])
 }
 
 model WorkoutPlan {

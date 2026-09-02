@@ -1,4 +1,4 @@
-import { scaleMacrosByGrams, type MacrosPer100g } from "@/lib/serving-calc";
+import { sumAbsoluteMacros, type MacrosPer100g } from "@/lib/serving-calc";
 
 export interface CompositeComponentInput {
   grams: number;
@@ -25,18 +25,7 @@ export function computeCompositeMacros(components: CompositeComponentInput[]): C
     };
   }
 
-  const absolute = components.reduce(
-    (acc, c) => {
-      const scaled = scaleMacrosByGrams(c.per100g, c.grams);
-      return {
-        calories: acc.calories + (scaled.calories ?? 0),
-        protein: acc.protein + (scaled.protein ?? 0),
-        carbs: acc.carbs + (scaled.carbs ?? 0),
-        fat: acc.fat + (scaled.fat ?? 0),
-      };
-    },
-    { calories: 0, protein: 0, carbs: 0, fat: 0 },
-  );
+  const absolute = sumAbsoluteMacros(components);
 
   const factor = 100 / totalGrams;
   return {

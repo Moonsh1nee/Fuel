@@ -41,6 +41,9 @@ export interface NutritionPlanItem {
   name: string;
   description: string | null;
   targetCalories: number | null;
+  targetProtein: number | null;
+  targetCarbs: number | null;
+  targetFat: number | null;
   meals: MealTemplateItem[];
 }
 
@@ -48,6 +51,9 @@ function NewPlanDialog({ onCreated }: { onCreated: () => void }) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [targetCalories, setTargetCalories] = useState("");
+  const [targetProtein, setTargetProtein] = useState("");
+  const [targetCarbs, setTargetCarbs] = useState("");
+  const [targetFat, setTargetFat] = useState("");
   const [isPending, startTransition] = useTransition();
 
   const onSubmit = () => {
@@ -57,10 +63,16 @@ function NewPlanDialog({ onCreated }: { onCreated: () => void }) {
         await createNutritionPlan({
           name: name.trim(),
           targetCalories: targetCalories ? Number(targetCalories) : undefined,
+          targetProtein: targetProtein ? Number(targetProtein) : undefined,
+          targetCarbs: targetCarbs ? Number(targetCarbs) : undefined,
+          targetFat: targetFat ? Number(targetFat) : undefined,
         });
         toast.success("План создан");
         setName("");
         setTargetCalories("");
+        setTargetProtein("");
+        setTargetCarbs("");
+        setTargetFat("");
         setOpen(false);
         onCreated();
       } catch (err) {
@@ -92,6 +104,28 @@ function NewPlanDialog({ onCreated }: { onCreated: () => void }) {
               value={targetCalories}
               onChange={(e) => setTargetCalories(e.target.value)}
             />
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <div className="flex flex-col gap-1.5">
+              <Label>Белки, г</Label>
+              <Input
+                type="number"
+                value={targetProtein}
+                onChange={(e) => setTargetProtein(e.target.value)}
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label>Углеводы, г</Label>
+              <Input
+                type="number"
+                value={targetCarbs}
+                onChange={(e) => setTargetCarbs(e.target.value)}
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <Label>Жиры, г</Label>
+              <Input type="number" value={targetFat} onChange={(e) => setTargetFat(e.target.value)} />
+            </div>
           </div>
           <Button type="button" disabled={isPending || !name.trim()} onClick={onSubmit}>
             {isPending ? "Создание..." : "Создать"}
@@ -214,9 +248,12 @@ export function NutritionPlanManager({
           <CardHeader className="flex-row items-center justify-between">
             <div>
               <CardTitle>{plan.name}</CardTitle>
-              {plan.targetCalories && (
+              {(plan.targetCalories || plan.targetProtein || plan.targetCarbs || plan.targetFat) && (
                 <p className="text-xs text-muted-foreground">
-                  Цель: {plan.targetCalories} ккал
+                  Цель:{plan.targetCalories ? ` ${plan.targetCalories} ккал` : ""}
+                  {plan.targetProtein ? ` · Б ${plan.targetProtein}` : ""}
+                  {plan.targetCarbs ? ` · У ${plan.targetCarbs}` : ""}
+                  {plan.targetFat ? ` · Ж ${plan.targetFat}` : ""}
                 </p>
               )}
             </div>

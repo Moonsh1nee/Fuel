@@ -6,6 +6,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { buildMonthMenu, type MealType as GenMealType, type RecipeCandidate } from "@/lib/menu-generation";
 import { mulberry32 } from "@/lib/seeded-rng";
+import { computeShoppingList, type ShoppingListIngredientInput } from "@/lib/shopping-list-calc";
 
 async function requireUserId(): Promise<string> {
   const session = await auth();
@@ -121,5 +122,67 @@ export async function clearMonthMenu(year: number, month: number) {
 export async function deleteMenuEntry(id: string) {
   const userId = await requireUserId();
   await prisma.menuEntry.deleteMany({ where: { id, userId } });
+  revalidatePath("/menu");
+}
+
+function monthKeyOf(year: number, month: number): string {
+  return `${year}-${String(month).padStart(2, "0")}`;
+}
+
+function normalizeItemKey(name: string): string {
+  return name.trim().toLowerCase();
+}
+
+export interface ShoppingListItemWithChecked {
+  itemKey: string;
+  name: string;
+  totalGrams: number;
+  checked: boolean;
+}
+
+export async function getShoppingList(year: number, month: number): Promise<ShoppingListItemWithChecked[]> {
+  const userId = await requireUserId();
+  const { start, end } = monthRange(year, month);
+
+  const entries = await prisma.menuEntry.findMany({
+    where: { userId, date: { gte: start, lt: end } },
+    include: { recipe: { include: { ingredients: true } } },
+  });
+
+  const ingredientInputs: ShoppingListIngredientInput[] = [];
+  for (const entry of entries) {
+    // recipe.servings is the whole recipe's yield, entry.servings is how
+    // many of those servings this specific meal calls for.
+    const scaleFactor = entry.servings / entry.recipe.servings;
+    for (const ingredient of entry.recipe.ingredients) {
+      ingredientInputs.push({ name: ingredient.name, grams: ingredient.grams * scaleFactor });
+    }
+  }
+
+  const items = computeShoppingList(ingredientInputs);
+
+  const monthKey = monthKeyOf(year, month);
+  const checks = await prisma.shoppingListCheck.findMany({ where: { userId, monthKey } });
+  const checkedKeys = new Set(checks.filter((c) => c.checked).map((c) => c.itemKey));
+
+  return items.map((item) => {
+    const itemKey = normalizeItemKey(item.name);
+    return { ...item, itemKey, checked: checkedKeys.has(itemKey) };
+  });
+}
+
+const toggleSchema = z.object({ itemKey: z.string().min(1), checked: z.boolean() });
+
+export async function toggleShoppingListItem(year: number, month: number, input: unknown) {
+  const userId = await requireUserId();
+  const { itemKey, checked } = toggleSchema.parse(input);
+  const monthKey = monthKeyOf(year, month);
+
+  await prisma.shoppingListCheck.upsert({
+    where: { userId_monthKey_itemKey: { userId, monthKey, itemKey } },
+    update: { checked },
+    create: { userId, monthKey, itemKey, checked },
+  });
+
   revalidatePath("/menu");
 }

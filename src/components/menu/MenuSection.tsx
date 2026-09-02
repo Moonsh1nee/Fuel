@@ -1,12 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
-import { ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
+import { ChevronLeft, ChevronRight, Sparkles, ShoppingCart } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MonthGrid, type MenuEntryItem } from "@/components/menu/MonthGrid";
 import { DayDetailDialog } from "@/components/menu/DayDetailDialog";
 import { GenerateMonthDialog } from "@/components/menu/GenerateMonthDialog";
+import { ShoppingListDialog } from "@/components/menu/ShoppingListDialog";
 import { listMenuEntries } from "@/lib/actions/menu";
 
 const MONTH_LABELS = [
@@ -35,6 +36,7 @@ export function MenuSection() {
   const [entries, setEntries] = useState<MenuEntryItem[]>([]);
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
   const [generateOpen, setGenerateOpen] = useState(false);
+  const [shoppingListOpen, setShoppingListOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   const reload = useCallback(() => {
@@ -84,9 +86,14 @@ export function MenuSection() {
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
-        <Button type="button" onClick={() => setGenerateOpen(true)}>
-          <Sparkles className="h-4 w-4" /> Сгенерировать месяц
-        </Button>
+        <div className="flex gap-2">
+          <Button type="button" variant="outline" onClick={() => setShoppingListOpen(true)}>
+            <ShoppingCart className="h-4 w-4" /> Список покупок
+          </Button>
+          <Button type="button" onClick={() => setGenerateOpen(true)}>
+            <Sparkles className="h-4 w-4" /> Сгенерировать месяц
+          </Button>
+        </div>
       </div>
 
       {isPending && entries.length === 0 ? (
@@ -109,6 +116,8 @@ export function MenuSection() {
         month={month}
         onGenerated={reload}
       />
+
+      <ShoppingListDialog open={shoppingListOpen} onOpenChange={setShoppingListOpen} year={year} month={month} />
     </div>
   );
 }

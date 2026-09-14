@@ -92,9 +92,14 @@ export async function generateMonthMenu(
   });
 
   const { start, end } = monthRange(year, month);
+  const monthKey = monthKeyOf(year, month);
 
   await prisma.$transaction(async (tx) => {
     await tx.menuEntry.deleteMany({ where: { userId, date: { gte: start, lt: end } } });
+    // A regenerated menu is a fresh plan - stale "already bought" checks
+    // from the replaced menu (e.g. for a recurring ingredient like milk)
+    // must not silently carry over and look pre-checked in the new list.
+    await tx.shoppingListCheck.deleteMany({ where: { userId, monthKey } });
     if (result.entries.length > 0) {
       await tx.menuEntry.createMany({
         data: result.entries.map((e) => ({
@@ -115,7 +120,11 @@ export async function generateMonthMenu(
 export async function clearMonthMenu(year: number, month: number) {
   const userId = await requireUserId();
   const { start, end } = monthRange(year, month);
-  await prisma.menuEntry.deleteMany({ where: { userId, date: { gte: start, lt: end } } });
+  const monthKey = monthKeyOf(year, month);
+  await prisma.$transaction([
+    prisma.menuEntry.deleteMany({ where: { userId, date: { gte: start, lt: end } } }),
+    prisma.shoppingListCheck.deleteMany({ where: { userId, monthKey } }),
+  ]);
   revalidatePath("/menu");
 }
 

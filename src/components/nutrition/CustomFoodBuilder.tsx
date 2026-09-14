@@ -10,6 +10,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { FoodSearchCombobox } from "@/components/nutrition/FoodSearchCombobox";
 import { createCustomFood } from "@/lib/actions/custom-foods";
 import { computeCompositeMacros } from "@/lib/composite-food-calc";
+import { getActionErrorMessage } from "@/lib/action-error";
 import type { NormalizedFood } from "@/lib/food-search";
 
 interface ComponentRow {
@@ -69,7 +70,7 @@ export function CustomFoodBuilder({ onSaved }: { onSaved: () => void }) {
         setRows([emptyRow(), emptyRow()]);
         onSaved();
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : "Не удалось сохранить продукт");
+        toast.error(getActionErrorMessage(err, "Не удалось сохранить продукт"));
       }
     });
   };

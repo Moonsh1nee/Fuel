@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { listNutritionPlans } from "@/lib/actions/nutrition";
 import { generateMonthMenu } from "@/lib/actions/menu";
+import { getActionErrorMessage } from "@/lib/action-error";
 
 const MEAL_LABELS: Record<string, string> = {
   BREAKFAST: "Завтрак",
@@ -63,7 +64,7 @@ export function GenerateMonthDialog({
         onOpenChange(false);
         onGenerated();
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : "Не удалось сгенерировать меню");
+        toast.error(getActionErrorMessage(err, "Не удалось сгенерировать меню"));
       }
     });
   }

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { normalizeOffProduct, type OffProduct } from "@/lib/food-search";
+import { logger } from "@/lib/logger";
 
 export async function GET(_request: Request, { params }: { params: Promise<{ barcode: string }> }) {
   const session = await auth();
@@ -11,8 +12,16 @@ export async function GET(_request: Request, { params }: { params: Promise<{ bar
   const { barcode } = await params;
   const url = `https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(barcode)}.json`;
 
-  const response = await fetch(url, { next: { revalidate: 86400 } });
+  let response: Response;
+  try {
+    response = await fetch(url, { next: { revalidate: 86400 } });
+  } catch (err) {
+    logger.error({ err, barcode }, "Open Food Facts barcode lookup request failed");
+    return NextResponse.json({ error: "Open Food Facts unavailable" }, { status: 502 });
+  }
+
   if (!response.ok) {
+    logger.warn({ status: response.status, barcode }, "Open Food Facts barcode lookup returned an error status");
     return NextResponse.json({ error: "Open Food Facts unavailable" }, { status: 502 });
   }
 

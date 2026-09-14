@@ -6,6 +6,7 @@ import { Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { deleteRecipe } from "@/lib/actions/recipes";
+import { getActionErrorMessage } from "@/lib/action-error";
 import type { RecipeFormInitial } from "@/components/recipes/RecipeForm";
 
 const MEAL_LABELS: Record<string, string> = {
@@ -53,7 +54,7 @@ export function RecipesList({
         toast.success("Рецепт удалён");
         onChanged();
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : "Не удалось удалить рецепт");
+        toast.error(getActionErrorMessage(err, "Не удалось удалить рецепт"));
       }
     });
   };

@@ -4,6 +4,7 @@ import { z } from "zod";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { logger } from "@/lib/logger";
 
 const registerSchema = z.object({
   name: z.string().min(1).max(100).optional(),
@@ -56,6 +57,7 @@ export async function POST(request: Request) {
         { status: 400 },
       );
     }
+    logger.error({ err }, "Unexpected error while creating a user account");
     throw err;
   }
 }

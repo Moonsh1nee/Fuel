@@ -6,6 +6,7 @@ import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { deleteMenuEntry } from "@/lib/actions/menu";
+import { getActionErrorMessage } from "@/lib/action-error";
 import type { MenuEntryItem } from "@/components/menu/MonthGrid";
 
 const MEAL_LABELS: Record<string, string> = {
@@ -37,7 +38,7 @@ export function DayDetailDialog({
         toast.success("Запись удалена");
         onChanged();
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : "Не удалось удалить запись");
+        toast.error(getActionErrorMessage(err, "Не удалось удалить запись"));
       }
     });
   }

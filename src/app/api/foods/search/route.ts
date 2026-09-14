@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { normalizeOffProducts, type OffProduct } from "@/lib/food-search";
+import { logger } from "@/lib/logger";
 
 export async function GET(request: Request) {
   const session = await auth();
@@ -20,8 +21,16 @@ export async function GET(request: Request) {
   url.searchParams.set("json", "1");
   url.searchParams.set("page_size", "20");
 
-  const response = await fetch(url, { next: { revalidate: 86400 } });
+  let response: Response;
+  try {
+    response = await fetch(url, { next: { revalidate: 86400 } });
+  } catch (err) {
+    logger.error({ err, query }, "Open Food Facts search request failed");
+    return NextResponse.json({ error: "Open Food Facts unavailable" }, { status: 502 });
+  }
+
   if (!response.ok) {
+    logger.warn({ status: response.status, query }, "Open Food Facts search returned an error status");
     return NextResponse.json({ error: "Open Food Facts unavailable" }, { status: 502 });
   }
 

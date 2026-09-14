@@ -4,6 +4,7 @@ import { useEffect, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { getShoppingList, toggleShoppingListItem, type ShoppingListItemWithChecked } from "@/lib/actions/menu";
+import { getActionErrorMessage } from "@/lib/action-error";
 
 export function ShoppingListDialog({
   open,
@@ -34,7 +35,7 @@ export function ShoppingListDialog({
       try {
         await toggleShoppingListItem(year, month, { itemKey, checked });
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : "Не удалось сохранить отметку");
+        toast.error(getActionErrorMessage(err, "Не удалось сохранить отметку"));
         setItems((prev) => prev.map((item) => (item.itemKey === itemKey ? { ...item, checked: !checked } : item)));
       }
     });

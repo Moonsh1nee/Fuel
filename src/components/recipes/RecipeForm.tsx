@@ -12,6 +12,7 @@ import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@
 import { FoodSearchCombobox } from "@/components/nutrition/FoodSearchCombobox";
 import { createRecipe, updateRecipe } from "@/lib/actions/recipes";
 import { computeRecipeMacrosPerServing } from "@/lib/recipe-macro-calc";
+import { getActionErrorMessage } from "@/lib/action-error";
 import type { NormalizedFood } from "@/lib/food-search";
 
 const MEAL_LABELS: Record<string, string> = {
@@ -156,7 +157,7 @@ export function RecipeForm({
         }
         onSaved();
       } catch (err) {
-        toast.error(err instanceof Error ? err.message : "Не удалось сохранить рецепт");
+        toast.error(getActionErrorMessage(err, "Не удалось сохранить рецепт"));
       }
     });
   };

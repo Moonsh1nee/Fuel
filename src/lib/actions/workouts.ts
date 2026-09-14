@@ -108,6 +108,15 @@ export async function listWorkoutLogs(limit = 30) {
   });
 }
 
+export async function listWorkoutLogsRange(start: Date, end: Date) {
+  const userId = await requireUserId();
+  return prisma.workoutLog.findMany({
+    where: { userId, date: { gte: start, lt: end } },
+    include: { exerciseLogs: true },
+    orderBy: { date: "asc" },
+  });
+}
+
 async function detectAndRecordPersonalRecord(
   userId: string,
   workoutLogId: string,

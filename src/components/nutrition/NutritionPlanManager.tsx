@@ -20,6 +20,7 @@ import {
   deleteNutritionPlan,
   createMealTemplate,
   deleteMealTemplate,
+  setActiveNutritionPlan,
 } from "@/lib/actions/nutrition";
 
 const MEAL_LABELS: Record<string, string> = {
@@ -44,6 +45,7 @@ export interface NutritionPlanItem {
   targetProtein: number | null;
   targetCarbs: number | null;
   targetFat: number | null;
+  isActive: boolean;
   meals: MealTemplateItem[];
 }
 
@@ -229,6 +231,13 @@ export function NutritionPlanManager({
     });
   };
 
+  const onSetActive = (id: string) => {
+    startTransition(async () => {
+      await setActiveNutritionPlan(id);
+      onChanged();
+    });
+  };
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex justify-end">
@@ -247,7 +256,14 @@ export function NutritionPlanManager({
         <Card key={plan.id}>
           <CardHeader className="flex-row items-center justify-between">
             <div>
-              <CardTitle>{plan.name}</CardTitle>
+              <div className="flex items-center gap-2">
+                <CardTitle>{plan.name}</CardTitle>
+                {plan.isActive && (
+                  <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                    Активен
+                  </span>
+                )}
+              </div>
               {(plan.targetCalories || plan.targetProtein || plan.targetCarbs || plan.targetFat) && (
                 <p className="text-xs text-muted-foreground">
                   Цель:{plan.targetCalories ? ` ${plan.targetCalories} ккал` : ""}
@@ -258,6 +274,17 @@ export function NutritionPlanManager({
               )}
             </div>
             <div className="flex items-center gap-1">
+              {!plan.isActive && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={isPending}
+                  onClick={() => onSetActive(plan.id)}
+                >
+                  Сделать активным
+                </Button>
+              )}
               <AddMealDialog planId={plan.id} onAdded={onChanged} />
               <Button
                 type="button"

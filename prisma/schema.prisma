@@ -91,6 +91,11 @@ model NutritionPlan {
   targetCarbs    Float?
   targetFat      Float?
 
+  // At most one plan per user should be true at a time - enforced in the
+  // action layer (setActiveNutritionPlan), not a DB constraint, since SQLite
+  // has no simple partial-unique-index syntax for "unique where true".
+  isActive Boolean @default(false)
+
   meals MealTemplate[]
 
   // Original HabitForge NutritionPlan.id — one-time import bookkeeping only.

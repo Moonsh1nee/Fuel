@@ -55,6 +55,16 @@ export async function deleteNutritionPlan(id: string) {
   revalidatePath("/nutrition");
 }
 
+export async function setActiveNutritionPlan(id: string) {
+  const userId = await requireUserId();
+  await prisma.$transaction([
+    prisma.nutritionPlan.updateMany({ where: { userId, isActive: true }, data: { isActive: false } }),
+    prisma.nutritionPlan.updateMany({ where: { id, userId }, data: { isActive: true } }),
+  ]);
+  revalidatePath("/nutrition");
+  revalidatePath("/dashboard");
+}
+
 const mealTemplateSchema = z.object({
   mealType: mealTypeSchema,
   name: z.string().min(1).max(150),
@@ -110,6 +120,14 @@ export async function listFoodLogs(date: Date) {
   return prisma.foodLog.findMany({
     where: { userId, date: { gte: start, lt: end } },
     orderBy: { createdAt: "asc" },
+  });
+}
+
+export async function listFoodLogsRange(start: Date, end: Date) {
+  const userId = await requireUserId();
+  return prisma.foodLog.findMany({
+    where: { userId, date: { gte: start, lt: end } },
+    orderBy: { date: "asc" },
   });
 }
 

@@ -63,6 +63,23 @@ export function FoodSearchCombobox({ onSelect }: { onSelect: (food: NormalizedFo
     setQuery("");
   };
 
+  // Not every ingredient has a KBJU value worth tracking (salt, water,
+  // spices to taste) or even exists in Open Food Facts. Without this, such
+  // rows had no way into a recipe/custom food - the combobox only ever
+  // called onSelect from a picked search result.
+  const addManually = () => {
+    const trimmed = query.trim();
+    if (!trimmed) return;
+    select({
+      barcode: null,
+      name: trimmed,
+      caloriesPer100g: null,
+      proteinPer100g: null,
+      carbsPer100g: null,
+      fatPer100g: null,
+    });
+  };
+
   const hasAnyResults = matchingCustomFoods.length > 0 || results.length > 0;
 
   return (
@@ -78,6 +95,15 @@ export function FoodSearchCombobox({ onSelect }: { onSelect: (food: NormalizedFo
           <Search className="h-4 w-4" />
         </Button>
       </div>
+      {query.trim() && (
+        <button
+          type="button"
+          onClick={addManually}
+          className="self-start text-xs text-muted-foreground underline-offset-2 hover:underline"
+        >
+          Добавить «{query.trim()}» вручную, без данных КБЖУ
+        </button>
+      )}
       {(matchingCustomFoods.length > 0 || (searched && hasAnyResults)) && (
         <div className="max-h-48 overflow-y-auto rounded-lg border border-border">
           {matchingCustomFoods.length > 0 && (
